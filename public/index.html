@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图文店 · 工程图纸打印</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<header>
+  <h1>图文店 · 工程图纸打印</h1>
+  <span class="sub">上传预检 / 校样批注 / 设备队列 / 重印与计费 / 取件核验</span>
+</header>
+<nav id="tabs">
+  <button data-tab="orders" class="on">订单与上传</button>
+  <button data-tab="proof">校样查看</button>
+  <button data-tab="console">操作台</button>
+  <button data-tab="billing">费用明细</button>
+  <button data-tab="pickup">取件核验</button>
+</nav>
+<main>
+  <section id="tab-orders"></section>
+  <section id="tab-proof" hidden></section>
+  <section id="tab-console" hidden></section>
+  <section id="tab-billing" hidden></section>
+  <section id="tab-pickup" hidden></section>
+</main>
+<div id="toast" class="toast"></div>
+<script src="app.js"></script>
+</body>
+</html>

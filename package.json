@@ -1,0 +1,12 @@
+{
+  "name": "print-shop",
+  "private": true,
+  "version": "1.0.0",
+  "description": "图文店工程图纸打印管理：上传预检、校样批注、设备队列、重印记录、费用明细、取件核验",
+  "type": "commonjs",
+  "scripts": {
+    "start": "node src/main.js --demo",
+    "seed": "node src/main.js --seed-only",
+    "test": "node --test \"tests/*.test.js\""
+  }
+}

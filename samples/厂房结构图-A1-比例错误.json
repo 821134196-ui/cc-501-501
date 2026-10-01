@@ -1,0 +1,58 @@
+{
+  "name": "厂房结构图-首层平面",
+  "pages": [
+    {
+      "width_mm": 841,
+      "height_mm": 594,
+      "declared_scale": "1:100",
+      "content_mm": {
+        "w": 73200,
+        "h": 51800
+      },
+      "fonts": [
+        "SimSun",
+        "HZTXT"
+      ],
+      "layers": [
+        {
+          "name": "轴线",
+          "print": true
+        },
+        {
+          "name": "墙体",
+          "print": true
+        },
+        {
+          "name": "尺寸标注",
+          "print": true
+        },
+        {
+          "name": "临时标注",
+          "print": false
+        }
+      ]
+    },
+    {
+      "width_mm": 841,
+      "height_mm": 594,
+      "declared_scale": "1:100",
+      "content_mm": {
+        "w": 84100,
+        "h": 59400
+      },
+      "fonts": [
+        "SimSun"
+      ],
+      "layers": [
+        {
+          "name": "轴线",
+          "print": true
+        },
+        {
+          "name": "配筋",
+          "print": true
+        }
+      ]
+    }
+  ]
+}

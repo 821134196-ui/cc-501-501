@@ -1,0 +1,28 @@
+{
+  "name": "商业楼效果图",
+  "pages": [
+    {
+      "width_mm": 594,
+      "height_mm": 420,
+      "declared_scale": "1:50",
+      "content_mm": {
+        "w": 29700,
+        "h": 21000
+      },
+      "fonts": [
+        "SimHei",
+        "Arial"
+      ],
+      "layers": [
+        {
+          "name": "总平",
+          "print": true
+        },
+        {
+          "name": "绿化",
+          "print": true
+        }
+      ]
+    }
+  ]
+}

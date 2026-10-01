@@ -1,0 +1,27 @@
+{
+  "name": "办公室平面图",
+  "pages": [
+    {
+      "width_mm": 420,
+      "height_mm": 297,
+      "declared_scale": "1:100",
+      "content_mm": {
+        "w": 42000,
+        "h": 29700
+      },
+      "fonts": [
+        "SimSun"
+      ],
+      "layers": [
+        {
+          "name": "墙体",
+          "print": true
+        },
+        {
+          "name": "家具",
+          "print": true
+        }
+      ]
+    }
+  ]
+}
