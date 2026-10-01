@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>图文快印 · 工程图打印管理</title>
+<style>
+:root{
+  --line:#e2e8f0; --line2:#cbd5e1; --struct:#64748b; --struct2:#475569;
+  --ink:#1e293b; --accent:#2563eb; --accent-bg:#eff6ff;
+  --err:#b91c1c; --err-bg:#fef2f2; --warn:#b45309; --warn-bg:#fffbeb;
+  --ok:#15803d; --ok-bg:#f0fdf4; --panel:#f8fafc;
+}
+*{box-sizing:border-box}
+body{margin:0;font:14px/1.6 -apple-system,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+  background:#fff;color:var(--ink)}
+.mono{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace}
+header{display:flex;align-items:center;gap:18px;padding:0 20px;height:52px;
+  border-bottom:1px solid var(--line);background:#fff;position:sticky;top:0;z-index:10}
+header h1{font-size:15px;margin:0;color:var(--struct2);font-weight:600;white-space:nowrap}
+nav{display:flex;gap:4px}
+nav button{border:0;background:none;padding:6px 14px;font-size:14px;color:var(--struct);
+  cursor:pointer;border-bottom:2px solid transparent;height:52px}
+nav button.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+main{padding:20px;max-width:1280px;margin:0 auto}
+section.tabpage{display:none}
+section.tabpage.on{display:block}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:16px;margin-bottom:16px}
+.panel h3{margin:0 0 12px;font-size:14px;color:var(--struct2)}
+label{display:block;font-size:12px;color:var(--struct);margin:10px 0 3px}
+input,select,textarea{font:inherit;padding:6px 8px;border:1px solid var(--line2);border-radius:6px;
+  background:#fff;color:var(--ink);min-width:0}
+input:focus,select:focus{outline:2px solid var(--accent-bg);border-color:var(--accent)}
+.btn{border:1px solid var(--line2);background:#fff;color:var(--struct2);padding:6px 14px;
+  border-radius:6px;cursor:pointer;font-size:13px}
+.btn:hover{border-color:var(--struct)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+.btn.primary:hover{background:#1d4ed8}
+.btn.danger{color:var(--err);border-color:#fecaca}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:2px 10px;font-size:12px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.badge{display:inline-block;padding:1px 8px;border-radius:10px;font-size:12px;background:#e2e8f0;color:var(--struct2)}
+.badge.err{background:var(--err-bg);color:var(--err)}
+.badge.warn{background:var(--warn-bg);color:var(--warn)}
+.badge.ok{background:var(--ok-bg);color:var(--ok)}
+.badge.info{background:var(--accent-bg);color:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{text-align:left;padding:7px 10px;border-bottom:1px solid var(--line)}
+th{color:var(--struct);font-weight:500;font-size:12px;background:var(--panel)}
+tr:hover td{background:#fafbfd}
+.num{text-align:right;font-family:ui-monospace,Menlo,Consolas,monospace}
+.neg{color:var(--ok)}
+.muted{color:var(--struct);font-size:12px}
+.issue{padding:8px 12px;border-radius:6px;margin:6px 0;font-size:13px}
+.issue.error{background:var(--err-bg);color:var(--err);border:1px solid #fecaca}
+.issue.warning{background:var(--warn-bg);color:var(--warn);border:1px solid #fde68a}
+.issue.info{background:var(--accent-bg);color:var(--struct2);border:1px solid #bfdbfe}
+.issue .mono{font-weight:600}
+/* 校样查看器 */
+.proof-layout{display:grid;grid-template-columns:250px 1fr;gap:16px}
+.order-list{max-height:76vh;overflow:auto}
+.order-item{padding:9px 12px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px;cursor:pointer;background:#fff}
+.order-item:hover{border-color:var(--struct)}
+.order-item.sel{border-color:var(--accent);background:var(--accent-bg)}
+.order-item .code{font-family:ui-monospace,monospace;font-size:13px;font-weight:600}
+.panes{display:grid;grid-template-columns:1fr;gap:16px}
+.panes.compare{grid-template-columns:1fr 1fr}
+.pane{border:1px solid var(--line);border-radius:8px;background:#fff;padding:10px;min-width:0}
+.pane-head{display:flex;gap:8px;align-items:center;margin-bottom:8px;flex-wrap:wrap}
+.viewer-wrap{overflow:auto;border:1px solid var(--line);border-radius:6px;background:#f1f5f9;padding:8px}
+.vgrid{display:inline-grid;grid-template-columns:34px auto;grid-template-rows:22px auto}
+.vgrid .corner{border-right:1px solid var(--line2);border-bottom:1px solid var(--line2);
+  font-size:9px;color:var(--struct);display:flex;align-items:center;justify-content:center}
+canvas.rx{border-bottom:1px solid var(--line2);background:#fff}
+canvas.ry{border-right:1px solid var(--line2);background:#fff}
+.sheet{position:relative;background:#fff;box-shadow:0 1px 4px rgba(15,23,42,.18)}
+.sheet svg{display:block}
+.anno{position:absolute;width:18px;height:18px;border-radius:50%;background:var(--accent);color:#fff;
+  font-size:11px;display:flex;align-items:center;justify-content:center;transform:translate(-50%,-50%);
+  cursor:default;box-shadow:0 0 0 2px #fff}
+.anno-list{font-size:12px;color:var(--struct2);margin-top:8px}
+.anno-list div{padding:2px 0;border-bottom:1px dashed var(--line)}
+.scale-banner{background:var(--err-bg);border:1px solid #fecaca;color:var(--err);border-radius:6px;
+  padding:8px 12px;margin:8px 0;font-size:13px}
+.scale-banner .mono{font-size:15px;font-weight:700}
+/* 操作台 */
+.devices{display:grid;grid-template-columns:repeat(auto-fill,minmax(380px,1fr));gap:16px}
+.device{border:1px solid var(--line);border-radius:8px;background:#fff}
+.device>header{position:static;border:0;border-bottom:1px solid var(--line);height:auto;
+  padding:10px 14px;display:flex;justify-content:space-between;align-items:center}
+.device h4{margin:0;font-size:14px}
+.device .body{padding:10px 14px}
+.taskline{display:flex;justify-content:space-between;align-items:center;gap:8px;
+  padding:7px 0;border-bottom:1px dashed var(--line);font-size:13px}
+.taskline:last-child{border-bottom:0}
+.pill{font-size:11px;padding:1px 8px;border-radius:9px;background:#e2e8f0;color:var(--struct2)}
+.pill.busy{background:var(--warn-bg);color:var(--warn)}
+.pill.idle{background:var(--ok-bg);color:var(--ok)}
+.pill.rush{background:var(--err-bg);color:var(--err)}
+/* 订单费用 */
+.flow{display:flex;gap:0;margin:10px 0;font-size:12px}
+.flow span{flex:1;text-align:center;padding:5px 0;background:#e2e8f0;color:var(--struct);
+  border-right:2px solid #fff}
+.flow span.done{background:var(--accent-bg);color:var(--accent);font-weight:600}
+.toast{position:fixed;bottom:24px;left:50%;transform:translateX(-50%);padding:10px 20px;
+  border-radius:8px;background:#0f172a;color:#fff;font-size:13px;z-index:99;box-shadow:0 4px 16px rgba(0,0,0,.25)}
+.toast.err{background:var(--err)}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:1000px){.proof-layout,.split,.panes.compare{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header>
+  <h1>图文快印 · 工程图打印管理</h1>
+  <nav id="nav">
+    <button data-tab="order" class="on">下单</button>
+    <button data-tab="proof">校样</button>
+    <button data-tab="console">操作台</button>
+    <button data-tab="billing">订单与费用</button>
+  </nav>
+</header>
+<main>
+  <!-- ============ 下单 ============ -->
+  <section id="tab-order" class="tabpage on">
+    <div class="split">
+      <div class="panel">
+        <h3>新建订单</h3>
+        <label>客户姓名</label><input id="f-customer" style="width:100%" placeholder="客户姓名或单位">
+        <div class="grid3">
+          <div><label>纸张规格</label><select id="f-paper" style="width:100%"></select></div>
+          <div><label>色彩</label><select id="f-color" style="width:100%">
+            <option value="bw">黑白</option><option value="color">彩色</option></select></div>
+          <div><label>单双面</label><select id="f-duplex" style="width:100%">
+            <option value="0">单面</option><option value="1">双面</option></select></div>
+        </div>
+        <div class="grid3">
+          <div><label>装订</label><select id="f-binding" style="width:100%"></select></div>
+          <div><label>份数</label><input id="f-copies" type="number" min="1" value="1" style="width:100%"></div>
+          <div><label>&nbsp;</label><label style="font-size:13px;color:var(--ink)">
+            <input type="checkbox" id="f-urgent"> 急单插队(加收30%)</label></div>
+        </div>
+        <label>图纸文件(选择样例或上传 SVG)</label>
+        <div class="row">
+          <select id="f-sample" style="flex:1"></select>
+          <input type="file" id="f-file" accept=".svg" style="flex:1">
+        </div>
+        <div class="row" style="margin-top:14px">
+          <button class="btn primary" id="btn-create">提交并预检</button>
+          <span class="muted">提交后先检查图幅与页数,生成校样;客户确认后才进入打印队列</span>
+        </div>
+      </div>
+      <div class="panel" id="precheck-panel" style="display:none">
+        <h3>上传预检结果</h3>
+        <div id="precheck-body"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 校样 ============ -->
+  <section id="tab-proof" class="tabpage">
+    <div class="proof-layout">
+      <div>
+        <div class="panel" style="padding:10px">
+          <h3 style="margin-bottom:8px">订单</h3>
+          <div class="order-list" id="proof-orders"></div>
+        </div>
+      </div>
+      <div id="proof-main"><div class="panel muted">请选择左侧订单查看校样</div></div>
+    </div>
+  </section>
+
+  <!-- ============ 操作台 ============ -->
+  <section id="tab-console" class="tabpage">
+    <div class="panel row">
+      <label style="margin:0">操作员</label>
+      <input id="operator" placeholder="签到姓名" style="width:160px">
+      <span class="muted">同一设备任务两人同时开机时,系统只允许一人成功</span>
+      <span style="flex:1"></span>
+      <button class="btn sm" id="btn-refresh-devices">刷新</button>
+    </div>
+    <div class="devices" id="devices"></div>
+  </section>
+
+  <!-- ============ 订单与费用 ============ -->
+  <section id="tab-billing" class="tabpage">
+    <div class="panel">
+      <h3>订单列表</h3>
+      <table id="orders-table">
+        <thead><tr><th>单号</th><th>客户</th><th>规格</th><th>状态</th>
+          <th class="num">金额(元)</th><th></th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <div id="order-detail"></div>
+  </section>
+</main>
+<div id="toast" class="toast" style="display:none"></div>
+
+<script>
+"use strict";
+const $ = s => document.querySelector(s);
+const S = { meta:null, orders:[], devices:[], selOrderId:null, detail:null,
+            compare:true, paneVer:{a:null,b:null}, tab:"order" };
+
+/* ---------------- 基础 ---------------- */
+async function api(path, method="GET", body, raw){
+  const opt = {method, headers:{}};
+  if (body !== undefined){
+    if (raw){ opt.body = body; opt.headers["Content-Type"]="text/plain"; }
+    else { opt.body = JSON.stringify(body); opt.headers["Content-Type"]="application/json"; }
+  }
+  const r = await fetch(path, opt);
+  const data = await r.json().catch(()=>({}));
+  if (!r.ok) throw new Error(data.error || ("请求失败 "+r.status));
+  return data;
+}
+function toast(msg, isErr){
+  const t = $("#toast"); t.textContent = msg;
+  t.className = "toast" + (isErr?" err":""); t.style.display="block";
+  clearTimeout(t._h); t._h = setTimeout(()=>t.style.display="none", isErr?5000:2600);
+}
+const guard = p => p.catch(e => toast(e.message, true));
+const fm = x => (x<0?"-":"") + Math.abs(Number(x)).toFixed(2);
+const ftime = iso => iso ? iso.slice(11,19) : "-";
+const fdt = iso => iso ? iso.slice(5,16).replace("T"," ") : "-";
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const STATUS = ["pending_file","proof_ready","queued","printing","ready","delivered"];
+const stLabel = s => (S.meta?.status_label||{})[s] || s;
+const stBadge = s => { const map={pending_file:"",proof_ready:"warn",queued:"info",printing:"warn",ready:"ok",delivered:""};
+  return `<span class="badge ${map[s]||""}">${stLabel(s)}</span>`; };
+function specText(o){
+  return `${o.paper_size} · ${o.color_mode==="color"?"彩色":"黑白"} · ${o.duplex?"双面":"单面"} · `
+    + `${(S.meta?.binding_label||{})[o.binding]||o.binding} · ${o.copies}份${o.urgent?" · 急":""}`;
+}
+
+/* ---------------- 页签 ---------------- */
+$("#nav").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  S.tab = b.dataset.tab;
+  document.querySelectorAll("#nav button").forEach(x=>x.classList.toggle("on", x===b));
+  document.querySelectorAll("section.tabpage").forEach(s=>s.classList.toggle("on", s.id==="tab-"+S.tab));
+  refreshActive();
+});
+function refreshActive(){
+  if (S.tab==="proof"){ loadOrders().then(()=>{ if(S.selOrderId) loadDetail(S.selOrderId); }); }
+  if (S.tab==="console") loadDevices();
+  if (S.tab==="billing"){ loadOrders().then(renderBilling); if(S.selOrderId) loadDetail(S.selOrderId); }
+}
+setInterval(()=>{ if(S.tab==="console") loadDevices(); }, 3000);
+
+/* ---------------- 下单 ---------------- */
+async function initForm(){
+  const m = S.meta;
+  $("#f-paper").innerHTML = Object.keys(m.paper_sizes).map(p=>`<option ${p==="A1"?"selected":""}>${p}</option>`).join("");
+  $("#f-binding").innerHTML = Object.entries(m.binding_label).map(([k,v])=>`<option value="${k}">${v}</option>`).join("");
+  const samples = await api("/api/samples");
+  $("#f-sample").innerHTML = samples.map(s=>`<option>${esc(s)}</option>`).join("");
+}
+$("#btn-create").onclick = () => guard((async()=>{
+  const order = await api("/api/orders","POST",{
+    customer: $("#f-customer").value, paper_size: $("#f-paper").value,
+    color_mode: $("#f-color").value, duplex: $("#f-duplex").value==="1",
+    binding: $("#f-binding").value, copies: +$("#f-copies").value, urgent: $("#f-urgent").checked,
+  });
+  const file = $("#f-file").files[0];
+  let v;
+  if (file){
+    const text = await file.text();
+    v = await uploadRaw(order.id, file.name, text);
+  } else {
+    v = await api(`/api/orders/${order.id}/files`,"POST",{sample: $("#f-sample").value});
+  }
+  renderPrecheck(order, v);
+  await loadOrders();
+  S.selOrderId = order.id;
+})());
+async function uploadRaw(oid, name, text){
+  const r = await fetch(`/api/orders/${oid}/files`, {method:"POST",
+    headers:{"Content-Type":"text/plain","X-Filename":name}, body:text});
+  const data = await r.json().catch(()=>({}));
+  if(!r.ok) throw new Error(data.error||"上传失败");
+  return data;
+}
+function issueHtml(i){
+  return `<div class="issue ${i.level}">${esc(i.message)}</div>`;
+}
+function renderPrecheck(order, v){
+  const p = v.precheck, d = p.drawing;
+  $("#precheck-panel").style.display = "block";
+  $("#precheck-body").innerHTML = `
+    <div class="row" style="font-size:14px">
+      <span>实际图幅 <span class="mono" style="font-weight:700">${d.width_mm}×${d.height_mm}mm</span>
+        (约 ${esc(d.nearest)})</span>
+      <span class="badge">${v.page_count} 页</span>
+      <span class="badge ${p.status==="error"?"err":p.status==="warning"?"warn":"ok"}">
+        ${p.status==="error"?"预检未通过":p.status==="warning"?"有警告":"通过"}</span>
+    </div>
+    ${p.issues.map(issueHtml).join("")}
+    <div class="row" style="margin-top:10px">
+      <button class="btn primary" id="btn-goto-proof">前往校样确认 →</button>
+      <span class="muted">单号 <span class="mono">${esc(order.code)}</span></span>
+    </div>`;
+  $("#btn-goto-proof").onclick = ()=>{
+    document.querySelector('#nav button[data-tab="proof"]').click();
+  };
+}
+
+/* ---------------- 校样 ---------------- */
+async function loadOrders(){
+  S.orders = await api("/api/orders");
+  renderProofOrderList();
+}
+function renderProofOrderList(){
+  $("#proof-orders").innerHTML = S.orders.map(o=>`
+    <div class="order-item ${o.id===S.selOrderId?"sel":""}" data-id="${o.id}">
+      <div class="row" style="justify-content:space-between">
+        <span class="code">${esc(o.code)}</span>${stBadge(o.status)}
+      </div>
+      <div class="muted">${esc(o.customer)} · ${o.paper_size} · ${o.copies}份${o.urgent?' · <span class="pill rush">急</span>':""}</div>
+    </div>`).join("") || '<div class="muted">暂无订单</div>';
+  document.querySelectorAll("#proof-orders .order-item").forEach(el=>{
+    el.onclick = ()=>{ S.selOrderId = +el.dataset.id; loadDetail(S.selOrderId); };
+  });
+}
+async function loadDetail(oid){
+  S.detail = await api("/api/orders/"+oid);
+  S.selOrderId = oid;
+  if (S.tab==="proof") renderProof();
+  if (S.tab==="billing") renderBillingDetail();
+}
+const proofOf = v => (S.detail?.proofs||[]).find(p=>p.version_id===v.id);
+
+function renderProof(){
+  const d = S.detail;
+  renderProofOrderList();
+  if (!d){ $("#proof-main").innerHTML = '<div class="panel muted">请选择左侧订单查看校样</div>'; return; }
+  if (!d.versions.length){
+    $("#proof-main").innerHTML = `<div class="panel"><h3>${esc(d.code)} · ${esc(d.customer)}</h3>
+      <p class="muted">尚未上传图纸文件。</p>${uploadBarHtml(d)}</div>`;
+    bindUploadBar(d);
+    return;
+  }
+  const ids = d.versions.map(v=>v.id);
+  if (!ids.includes(S.paneVer.a)) S.paneVer.a = d.confirmed_version_id ?? ids[0];
+  if (!ids.includes(S.paneVer.b)) S.paneVer.b = ids[ids.length-1];
+  $("#proof-main").innerHTML = `
+    <div class="panel">
+      <div class="row" style="justify-content:space-between">
+        <div class="row">
+          <b>${esc(d.code)}</b><span>${esc(d.customer)}</span>${stBadge(d.status)}
+          <span class="muted">${specText(d)}</span>
+        </div>
+        <div class="row">
+          <label style="margin:0"><input type="checkbox" id="cmp" ${S.compare?"checked":""}> 并排对比</label>
+        </div>
+      </div>
+      ${uploadBarHtml(d)}
+    </div>
+    <div class="panes ${S.compare?"compare":""}" id="panes">
+      <div class="pane" id="pane-a"></div>
+      ${S.compare?'<div class="pane" id="pane-b"></div>':""}
+    </div>`;
+  $("#cmp").onchange = e=>{ S.compare = e.target.checked; renderProof(); };
+  bindUploadBar(d);
+  renderPane("a", S.paneVer.a);
+  if (S.compare) renderPane("b", S.paneVer.b);
+}
+function uploadBarHtml(d){
+  const can = ["pending_file","proof_ready","queued"].includes(d.status);
+  if (!can) return "";
+  return `<div class="row" style="margin-top:8px">
+    <span class="muted">${d.versions.length?"补传文件(不会覆盖已确认校样,将生成新版本)":"上传图纸"}:</span>
+    <select class="up-sample" style="width:200px">${$("#f-sample").innerHTML}</select>
+    <input type="file" class="up-file" accept=".svg">
+    <button class="btn sm up-go">上传</button>
+  </div>`;
+}
+function bindUploadBar(d){
+  const btn = $("#proof-main .up-go"); if(!btn) return;
+  btn.onclick = ()=>guard(async()=>{
+    const f = $("#proof-main .up-file").files[0];
+    if (f) await uploadRaw(d.id, f.name, await f.text());
+    else await api(`/api/orders/${d.id}/files`,"POST",{sample: $("#proof-main .up-sample").value});
+    toast("已上传并生成新校样");
+    await loadOrders(); await loadDetail(d.id);
+  });
+}
+
+async function renderPane(which, versionId){
+  const d = S.detail;
+  const el = $("#pane-"+which);
+  const v = d.versions.find(x=>x.id===versionId);
+  if (!v) return;
+  S.paneVer[which] = versionId;
+  const proof = proofOf(v);
+  const p = v.precheck, dr = p.drawing;
+  const targetW = S.compare ? 430 : 640;
+  const scale = Math.min(targetW/dr.width_mm, 400/dr.height_mm);
+  const opts = d.versions.map(x=>`<option value="${x.id}" ${x.id===versionId?"selected":""}>v${x.version} · ${esc(x.filename)}</option>`).join("");
+  const scaleIssue = p.issues.find(i=>i.code==="scale_mismatch");
+  el.innerHTML = `
+    <div class="pane-head">
+      <select class="ver-sel">${opts}</select>
+      ${proof ? proofBadge(proof) : ""}
+      <span class="muted mono">${dr.width_mm}×${dr.height_mm}mm</span>
+    </div>
+    ${scaleIssue?`<div class="scale-banner">比例错误:图幅 <span class="mono">${dr.width_mm}×${dr.height_mm}mm</span>
+      → 纸张 ${p.paper.size} <span class="mono">${p.paper.width_mm}×${p.paper.height_mm}mm</span>,
+      需缩放至 <span class="mono">${p.scale_percent}%</span>${p.rotated?"(旋转后)":""}</div>`:""}
+    <div class="viewer-wrap"><div class="vgrid">
+      <div class="corner">mm</div>
+      <canvas class="rx"></canvas>
+      <canvas class="ry"></canvas>
+      <div><div class="sheet"></div></div>
+    </div></div>
+    ${p.issues.filter(i=>i.code!=="scale_mismatch").map(issueHtml).join("")}
+    <div class="anno-list"></div>
+    <div class="row" style="margin-top:8px">
+      ${proof && !proof.locked ? '<button class="btn primary sm confirm">客户确认校样</button><span class="muted">点击图纸可添加批注</span>':""}
+      ${proof && proof.locked ? `<span class="badge ok">🔒 已确认锁定 ${fdt(proof.confirmed_at)}</span>`:""}
+    </div>`;
+  el.querySelector(".ver-sel").onchange = e=>renderPane(which, +e.target.value);
+
+  // 标尺(实际图幅 mm)
+  drawRuler(el.querySelector(".rx"), "x", dr.width_mm, scale);
+  drawRuler(el.querySelector(".ry"), "y", dr.height_mm, scale);
+
+  // 图纸
+  const sheet = el.querySelector(".sheet");
+  sheet.style.width = dr.width_mm*scale + "px";
+  sheet.style.height = dr.height_mm*scale + "px";
+  const svgText = await (await fetch("/api/files/"+v.id)).text();
+  sheet.innerHTML = svgText;
+  const svgEl = sheet.querySelector("svg");
+  svgEl.setAttribute("width","100%"); svgEl.setAttribute("height","100%");
+
+  // 批注
+  const annos = proof ? proof.annotations : [];
+  annos.forEach((a,i)=>{
+    const dot = document.createElement("div");
+    dot.className = "anno"; dot.textContent = i+1;
+    dot.style.left = a.x_mm*scale+"px"; dot.style.top = a.y_mm*scale+"px";
+    dot.title = a.text; sheet.appendChild(dot);
+  });
+  el.querySelector(".anno-list").innerHTML = annos.map((a,i)=>
+    `<div>#${i+1} <span class="mono">(${a.x_mm.toFixed(0)}mm, ${a.y_mm.toFixed(0)}mm)</span>
+      ${esc(a.text)} <span class="muted">${a.author==="shop"?"门店":"客户"} · ${fdt(a.created_at)}</span></div>`).join("");
+  if (proof && !proof.locked){
+    sheet.style.cursor = "crosshair";
+    sheet.onclick = ev=>{
+      const r = sheet.getBoundingClientRect();
+      const x = (ev.clientX-r.left)/scale, y = (ev.clientY-r.top)/scale;
+      const text = prompt(`批注位置 (${x.toFixed(0)}mm, ${y.toFixed(0)}mm)\n请输入批注内容:`);
+      if (!text) return;
+      guard(api(`/api/proofs/${proof.id}/annotations`,"POST",
+        {author:"shop", x_mm:x, y_mm:y, text}).then(()=>loadDetail(d.id)));
+    };
+    el.querySelector(".confirm").onclick = ()=>guard(
+      api(`/api/proofs/${proof.id}/confirm`,"POST").then(async()=>{
+        toast("校样已确认锁定,订单进入打印队列");
+        await loadOrders(); await loadDetail(d.id);
+      }));
+  }
+}
+function proofBadge(proof){
+  if (proof.status==="confirmed") return '<span class="badge ok">已确认</span>';
+  if (proof.status==="superseded") return '<span class="badge">已被新版本替代(存档)</span>';
+  return '<span class="badge warn">待确认</span>';
+}
+function drawRuler(canvas, axis, mm, scale){
+  const L = mm*scale;
+  if (axis==="x"){ canvas.width = Math.ceil(L)+1; canvas.height = 22; }
+  else { canvas.width = 34; canvas.height = Math.ceil(L)+1; }
+  const c = canvas.getContext("2d");
+  c.strokeStyle = "#94a3b8"; c.fillStyle = "#64748b";
+  c.font = "9px ui-monospace,Menlo,monospace"; c.lineWidth = 1;
+  c.beginPath();
+  for (let v=0; v<=mm+1e-6; v+=10){
+    const major = v%100===0, mid = v%50===0;
+    const len = major?10:(mid?7:4);
+    if (axis==="x"){
+      const px = v*scale+.5;
+      c.moveTo(px,22); c.lineTo(px,22-len);
+      if (major) c.fillText(v, px+2, 10);
+    } else {
+      const py = v*scale+.5;
+      c.moveTo(34,py); c.lineTo(34-len,py);
+      if (major) c.fillText(v, 2, py+3);
+    }
+  }
+  c.stroke();
+}
+
+/* ---------------- 操作台 ---------------- */
+async function loadDevices(){
+  S.devices = await api("/api/devices");
+  const op = $("#operator").value.trim();
+  $("#devices").innerHTML = S.devices.map(d=>`
+    <div class="device">
+      <header>
+        <h4>${esc(d.name)}</h4>
+        <span class="muted">最大${d.max_paper} · ${d.color?"彩色":"黑白"}</span>
+        <span class="pill ${d.status==="printing"?"busy":"idle"}">${d.status==="printing"?"打印中":"待机"}</span>
+      </header>
+      <div class="body">
+        ${d.current?`
+          <div class="taskline">
+            <span>▶ <b class="mono">${esc(d.current.code)}</b> ${esc(d.current.customer)}
+              ${d.current.page_count}页×${d.current.copies}份
+              <span class="muted">操作员:${esc(d.current.operator||"-")}</span></span>
+            <span class="row">
+              <button class="btn sm primary" data-act="complete" data-id="${d.current.id}">完成</button>
+              <button class="btn sm danger" data-act="jam" data-id="${d.current.id}">卡纸</button>
+            </span>
+          </div>`:'<div class="muted" style="padding:4px 0">当前无在印任务</div>'}
+        ${d.queue.length?'<div class="muted" style="margin-top:6px">待机队列:</div>':""}
+        ${d.queue.map(t=>`
+          <div class="taskline">
+            <span>#${t.position} <b class="mono">${esc(t.code)}</b>
+              ${t.urgent?'<span class="pill rush">急</span>':""}
+              ${t.kind==="reprint"?'<span class="pill busy">重印</span>':""}
+              ${t.page_count}页×${t.copies}份
+              <span class="muted">预计完成 <span class="mono">${ftime(t.est_finish)}</span></span></span>
+            <button class="btn sm" data-act="claim" data-id="${t.id}" ${d.status==="printing"?"disabled":""}>开机</button>
+          </div>`).join("")}
+        ${d.recent.length?'<div class="muted" style="margin-top:6px">最近:</div>':""}
+        ${d.recent.map(t=>`
+          <div class="taskline">
+            <span class="muted"><b class="mono">${esc(t.code)}</b>
+              ${t.status==="done"?"已完成":"卡纸"} ${fdt(t.finished_at)}</span>
+            <button class="btn sm" data-act="reprint" data-order="${t.order_id}">重印</button>
+          </div>`).join("")}
+      </div>
+    </div>`).join("");
+  document.querySelectorAll("#devices button[data-act]").forEach(b=>{
+    b.onclick = ()=>guard((async()=>{
+      const act = b.dataset.act;
+      if (act==="claim"){
+        if (!$("#operator").value.trim()){ toast("请先填写操作员姓名", true); return; }
+        await api(`/api/tasks/${b.dataset.id}/claim`,"POST",{operator:$("#operator").value.trim()});
+        toast("已开机");
+      } else if (act==="complete"){
+        await api(`/api/tasks/${b.dataset.id}/complete`,"POST"); toast("任务完成,订单待取件");
+      } else if (act==="jam"){
+        await api(`/api/tasks/${b.dataset.id}/jam`,"POST"); toast("已记录卡纸,请从订单发起重印", true);
+      } else if (act==="reprint"){
+        S.selOrderId = +b.dataset.order;
+        document.querySelector('#nav button[data-tab="billing"]').click();
+        await loadDetail(S.selOrderId);
+        return;
+      }
+      loadDevices();
+    })());
+  });
+}
+
+/* ---------------- 订单与费用 ---------------- */
+function renderBilling(){
+  const tb = document.querySelector("#orders-table tbody");
+  tb.innerHTML = S.orders.map(o=>`
+    <tr>
+      <td class="mono">${esc(o.code)}</td><td>${esc(o.customer)}</td>
+      <td class="muted">${specText(o)}</td><td>${stBadge(o.status)}</td>
+      <td class="num">${fm(o.total)}</td>
+      <td><button class="btn sm" data-id="${o.id}">详情</button></td>
+    </tr>`).join("");
+  tb.querySelectorAll("button").forEach(b=>b.onclick=()=>{ S.selOrderId=+b.dataset.id; loadDetail(S.selOrderId); });
+}
+function renderBillingDetail(){
+  const d = S.detail; if(!d){ $("#order-detail").innerHTML=""; return; }
+  const delivered = d.status==="delivered";
+  const flowIdx = STATUS.indexOf(d.status);
+  const reasons = S.meta.reprint_reasons, rules = S.meta.reprint_rules;
+  $("#order-detail").innerHTML = `
+    <div class="panel">
+      <h3>订单 ${esc(d.code)} · ${esc(d.customer)} ${stBadge(d.status)}</h3>
+      <div class="flow">${STATUS.map((s,i)=>`<span class="${i<=flowIdx?"done":""}">${stLabel(s)}</span>`).join("")}</div>
+      <div class="muted">${specText(d)} · 下单 ${fdt(d.created_at)}</div>
+      <div class="row" style="margin-top:6px">
+        ${d.versions.map(v=>{const p=proofOf(v);
+          return `<span class="badge ${p&&p.locked?"ok":""}">v${v.version} ${v.page_count}页
+            ${p?(p.status==="confirmed"?"·校样已确认":p.status==="superseded"?"·校样存档":"·校样待确认"):""}</span>`;}).join("")}
+      </div>
+    </div>
+    <div class="split">
+      <div class="panel">
+        <h3>费用明细 ${delivered?'<span class="badge">已交付,费用锁定</span>':""}</h3>
+        <table><thead><tr><th>类型</th><th>说明</th><th class="num">金额(元)</th></tr></thead>
+        <tbody>${d.charges.map(c=>`<tr>
+          <td>${{print:"打印",binding:"装订",rush:"急单",reprint:"重印",reprint_free:"重印",reduction:"减量",adjustment:"调整"}[c.type]||c.type}</td>
+          <td class="muted">${esc(c.label)}</td>
+          <td class="num ${c.amount<0?"neg":""}">${fm(c.amount)}</td></tr>`).join("")}
+          <tr><td colspan="2"><b>合计</b></td><td class="num"><b>${fm(d.total)}</b></td></tr>
+        </tbody></table>
+        ${d.reprints.length?`<h3 style="margin-top:14px">重印记录</h3>
+        <table><thead><tr><th>时间</th><th>原因</th><th>费用处理</th><th class="num">客户承担</th></tr></thead>
+        <tbody>${d.reprints.map(r=>`<tr>
+          <td class="muted">${fdt(r.created_at)}</td><td>${reasons[r.reason]||r.reason}</td>
+          <td class="muted">${r.fee_handling==="shop_absorb"?"店方承担":"客户部分承担"}</td>
+          <td class="num">${fm(r.amount)}</td></tr>`).join("")}</tbody></table>`:""}
+      </div>
+      <div class="panel">
+        <h3>操作</h3>
+        ${delivered?`
+          <div class="issue info">已于 ${fdt(d.pickup.created_at)} 由 ${esc(d.pickup.operator)} 核验交付给
+            ${esc(d.pickup.customer)}。订单已锁定,不能再次收费或重复取件。</div>`:""}
+        <label>临时减量(未开机前可减,差额退款)</label>
+        <div class="row">
+          <input type="number" id="reduce-n" min="1" max="${d.copies-1}" value="${Math.max(1,d.copies-1)}" style="width:80px">
+          <button class="btn sm" id="btn-reduce" ${delivered||d.copies<2?"disabled":""}>减量并退款</button>
+        </div>
+        <label>发起重印(按原因处理费用)</label>
+        <div class="row">
+          <select id="rp-reason">${Object.entries(reasons).map(([k,v])=>`<option value="${k}">${v}</option>`).join("")}</select>
+          <input id="rp-note" placeholder="备注(可选)" style="flex:1">
+          <button class="btn sm" id="btn-reprint" ${delivered?"disabled":""}>重印</button>
+        </div>
+        <div class="muted" id="rp-hint" style="margin-top:4px"></div>
+        <label>取件核验</label>
+        <div class="row">
+          <input id="pk-name" placeholder="取件人姓名" value="${esc(d.customer)}">
+          <button class="btn sm primary" id="btn-pickup" ${d.status!=="ready"?"disabled":""}>核验并交付</button>
+        </div>
+        ${d.status!=="ready"&&!delivered?'<div class="muted">订单未到待取件状态,暂不能交付</div>':""}
+      </div>
+    </div>`;
+  const hint = ()=>{ const r = rules[$("#rp-reason").value]; $("#rp-hint").textContent = r.text; };
+  $("#rp-reason").onchange = hint; hint();
+  $("#btn-reduce").onclick = ()=>guard(api(`/api/orders/${d.id}/reduce`,"POST",{copies:+$("#reduce-n").value})
+    .then(async()=>{ toast("已减量并退款"); await loadOrders(); await loadDetail(d.id); }));
+  $("#btn-reprint").onclick = ()=>guard(api(`/api/orders/${d.id}/reprint`,"POST",
+    {reason:$("#rp-reason").value, note:$("#rp-note").value, operator:$("#operator").value})
+    .then(async r=>{ toast(`重印已排队,客户承担 ¥${fm(r.amount)}`); await loadOrders(); await loadDetail(d.id); }));
+  $("#btn-pickup").onclick = ()=>guard(api(`/api/orders/${d.id}/pickup`,"POST",
+    {operator:$("#operator").value||"门店", customer:$("#pk-name").value})
+    .then(async()=>{ toast("已核验交付"); await loadOrders(); await loadDetail(d.id); }));
+}
+
+/* ---------------- 启动 ---------------- */
+(async()=>{
+  S.meta = await api("/api/meta");
+  $("#operator").value = localStorage.getItem("operator")||"";
+  $("#operator").onchange = e=>localStorage.setItem("operator", e.target.value.trim());
+  await initForm();
+  await loadOrders();
+  if (S.orders.length){ S.selOrderId = S.orders[S.orders.length-1].id; }
+})();
+</script>
+</body>
+</html>
